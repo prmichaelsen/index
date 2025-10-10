@@ -1,0 +1,44 @@
+{
+  "name": "arcane-knowledge",
+  "version": "0.1.0",
+  "description": "Arcane Knowledge - MCP server providing semantic search and vector database capabilities using Weaviate",
+  "main": "dist/server.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/server.ts",
+    "dev:build": "tsc --watch",
+    "start": "node dist/server.js",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "mcp",
+    "weaviate",
+    "vector-database",
+    "semantic-search",
+    "ai",
+    "arcane-knowledge"
+  ],
+  "author": "Patrick Michaelsen",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "weaviate-client": "^3.0.8",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0",
+    "tsx": "^4.6.0",
+    "eslint": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
