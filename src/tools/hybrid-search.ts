@@ -11,8 +11,15 @@ export class HybridSearchTool {
       name: 'hybrid_search',
       description: `Enhanced search combining semantic (vector) and keyword (BM25) matching for optimal results.
 
-Use this tool when you need both conceptual understanding AND precise term matching. 
-Differs from search_content by adding keyword matching to semantic search for better precision.
+When to Use Hybrid Search?
+Hybrid search queries are ideal for a search system that wants to leverage the power of semantic search capabilities but still rely on exact keyword matches. For example, the example search query "How to catch an Alaskan Pollock" from before would lead to better results with a hybrid search query than with a common keyword search or even a semantic search query.
+
+Advantages of Hybrid Search
+Hybrid search engines bring several advantages that make it a powerful approach for modern search systems, especially when both semantic understanding and exact keyword matching are essential. This dual approach excels in handling diverse user queries, whether they are domain-specific queries requiring exact matches or semantic queries that rely on context and meaning. For instance, in scenarios where users might include ambiguous phrases, domain-specific terms, or misspellings in their queries, hybrid search ensures relevant results by understanding the query's intent while still honoring exact matches for critical keywords.
+
+In addition to its flexibility, hybrid search significantly improves the user experience by reducing the need for perfectly phrased queries. Dense vector embeddings capture the semantic meaning behind a search query, making it easier to handle multi-concept or even multilingual queries. Its ability to seamlessly integrate semantic relationships with precise keyword matches ensures more accurate and contextually relevant outcomes.
+
+This makes hybrid search engines an ideal choice for applications in e-commerce, customer support, and other search-driven domains.
 
 Args:
     query: Search query string for both semantic and keyword matching

@@ -17,7 +17,6 @@ import { DeleteDocumentTool } from './tools/delete-document.js';
 import { HybridSearchTool } from './tools/hybrid-search.js';
 import { GetSimilarTool } from './tools/get-similar.js';
 import { RagQueryTool } from './tools/rag-query.js';
-import { QueryAgentTool } from './tools/query-agent.js';
 import { logger } from './utils/logger.js';
 
 // Load environment variables
@@ -33,7 +32,6 @@ class WeaviateMCPServer {
   private hybridSearchTool: HybridSearchTool;
   private getSimilarTool: GetSimilarTool;
   private ragQueryTool: RagQueryTool;
-  private queryAgentTool: QueryAgentTool;
 
   constructor() {
     // Initialize server
@@ -65,7 +63,6 @@ class WeaviateMCPServer {
     this.hybridSearchTool = new HybridSearchTool(this.weaviateClient);
     this.getSimilarTool = new GetSimilarTool(this.weaviateClient);
     this.ragQueryTool = new RagQueryTool(this.weaviateClient);
-    this.queryAgentTool = new QueryAgentTool(this.weaviateClient);
 
     this.setupHandlers();
   }
@@ -81,8 +78,7 @@ class WeaviateMCPServer {
           this.deleteDocumentTool.getToolDefinition(),
           this.hybridSearchTool.getToolDefinition(),
           this.getSimilarTool.getToolDefinition(),
-          this.ragQueryTool.getToolDefinition(),
-          this.queryAgentTool.getToolDefinition()
+          this.ragQueryTool.getToolDefinition()
         ],
       };
     });
@@ -159,16 +155,6 @@ class WeaviateMCPServer {
                 {
                   type: 'text',
                   text: JSON.stringify(await this.ragQueryTool.execute(args as any), null, 2),
-                },
-              ],
-            };
-
-          case 'query_agent':
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify(await this.queryAgentTool.execute(args as any), null, 2),
                 },
               ],
             };
