@@ -10,13 +10,12 @@ import { config } from 'dotenv';
 import { createServer } from 'http';
 import { WeaviateClientWrapper } from './weaviate/client.js';
 import { WeaviateConfig } from './types/weaviate.js';
-import { SearchContentTool } from './tools/search-content.js';
-import { AddDocumentTool } from './tools/add-document.js';
-import { UpdateDocumentTool } from './tools/update-document.js';
-import { DeleteDocumentTool } from './tools/delete-document.js';
-import { HybridSearchTool } from './tools/hybrid-search.js';
-import { GetSimilarTool } from './tools/get-similar.js';
-import { RagQueryTool } from './tools/rag-query.js';
+import { SearchIndexTool } from './tools/search-index.js';
+import { IndexNewTool } from './tools/index-new.js';
+import { IndexExistingTool } from './tools/index-existing.js';
+import { UnindexTool } from './tools/unindex.js';
+import { FindSimilarInIndexTool } from './tools/find-similar-in-index.js';
+import { AskIndexTool } from './tools/ask-index.js';
 import { logger } from './utils/logger.js';
 
 // Load environment variables
@@ -25,13 +24,12 @@ config();
 class WeaviateMCPServer {
   private server: Server;
   private weaviateClient: WeaviateClientWrapper;
-  private searchContentTool: SearchContentTool;
-  private addDocumentTool: AddDocumentTool;
-  private updateDocumentTool: UpdateDocumentTool;
-  private deleteDocumentTool: DeleteDocumentTool;
-  private hybridSearchTool: HybridSearchTool;
-  private getSimilarTool: GetSimilarTool;
-  private ragQueryTool: RagQueryTool;
+  private searchIndexTool: SearchIndexTool;
+  private indexNewTool: IndexNewTool;
+  private indexExistingTool: IndexExistingTool;
+  private unindexTool: UnindexTool;
+  private findSimilarInIndexTool: FindSimilarInIndexTool;
+  private askIndexTool: AskIndexTool;
 
   constructor() {
     // Initialize server
@@ -56,13 +54,12 @@ class WeaviateMCPServer {
     };
 
     this.weaviateClient = new WeaviateClientWrapper(weaviateConfig);
-    this.searchContentTool = new SearchContentTool(this.weaviateClient);
-    this.addDocumentTool = new AddDocumentTool(this.weaviateClient);
-    this.updateDocumentTool = new UpdateDocumentTool(this.weaviateClient);
-    this.deleteDocumentTool = new DeleteDocumentTool(this.weaviateClient);
-    this.hybridSearchTool = new HybridSearchTool(this.weaviateClient);
-    this.getSimilarTool = new GetSimilarTool(this.weaviateClient);
-    this.ragQueryTool = new RagQueryTool(this.weaviateClient);
+    this.searchIndexTool = new SearchIndexTool(this.weaviateClient);
+    this.indexNewTool = new IndexNewTool(this.weaviateClient);
+    this.indexExistingTool = new IndexExistingTool(this.weaviateClient);
+    this.unindexTool = new UnindexTool(this.weaviateClient);
+    this.findSimilarInIndexTool = new FindSimilarInIndexTool(this.weaviateClient);
+    this.askIndexTool = new AskIndexTool(this.weaviateClient);
 
     this.setupHandlers();
   }
@@ -72,13 +69,12 @@ class WeaviateMCPServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: [
-          this.searchContentTool.getToolDefinition(),
-          this.addDocumentTool.getToolDefinition(),
-          this.updateDocumentTool.getToolDefinition(),
-          this.deleteDocumentTool.getToolDefinition(),
-          this.hybridSearchTool.getToolDefinition(),
-          this.getSimilarTool.getToolDefinition(),
-          this.ragQueryTool.getToolDefinition()
+          this.searchIndexTool.getToolDefinition(),
+          this.indexNewTool.getToolDefinition(),
+          this.indexExistingTool.getToolDefinition(),
+          this.unindexTool.getToolDefinition(),
+          this.findSimilarInIndexTool.getToolDefinition(),
+          this.askIndexTool.getToolDefinition()
         ],
       };
     });
@@ -89,72 +85,62 @@ class WeaviateMCPServer {
 
       try {
         switch (name) {
-          case 'search_content':
+          case 'search_index':
             return {
               content: [
                 {
                   type: 'text',
-                  text: JSON.stringify(await this.searchContentTool.execute(args as any), null, 2),
+                  text: JSON.stringify(await this.searchIndexTool.execute(args as any), null, 2),
                 },
               ],
             };
 
-          case 'add_document':
+          case 'index_new':
             return {
               content: [
                 {
                   type: 'text',
-                  text: JSON.stringify(await this.addDocumentTool.execute(args as any), null, 2),
+                  text: JSON.stringify(await this.indexNewTool.execute(args as any), null, 2),
                 },
               ],
             };
 
-          case 'update_document':
+          case 'index_existing':
             return {
               content: [
                 {
                   type: 'text',
-                  text: JSON.stringify(await this.updateDocumentTool.execute(args as any), null, 2),
+                  text: JSON.stringify(await this.indexExistingTool.execute(args as any), null, 2),
                 },
               ],
             };
 
-          case 'delete_document':
+          case 'unindex':
             return {
               content: [
                 {
                   type: 'text',
-                  text: JSON.stringify(await this.deleteDocumentTool.execute(args as any), null, 2),
+                  text: JSON.stringify(await this.unindexTool.execute(args as any), null, 2),
                 },
               ],
             };
 
-          case 'hybrid_search':
+          case 'find_similar_in_index':
             return {
               content: [
                 {
                   type: 'text',
-                  text: JSON.stringify(await this.hybridSearchTool.execute(args as any), null, 2),
+                  text: JSON.stringify(await this.findSimilarInIndexTool.execute(args as any), null, 2),
                 },
               ],
             };
 
-          case 'get_similar':
+          case 'ask_index':
             return {
               content: [
                 {
                   type: 'text',
-                  text: JSON.stringify(await this.getSimilarTool.execute(args as any), null, 2),
-                },
-              ],
-            };
-
-          case 'rag_query':
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify(await this.ragQueryTool.execute(args as any), null, 2),
+                  text: JSON.stringify(await this.askIndexTool.execute(args as any), null, 2),
                 },
               ],
             };

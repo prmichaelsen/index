@@ -3,12 +3,12 @@ import { WeaviateClientWrapper } from '../weaviate/client.js';
 import { logger } from '../utils/logger.js';
 import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
-export class RagQueryTool {
+export class AskIndexTool {
   constructor(private weaviateClient: WeaviateClientWrapper) {}
 
   getToolDefinition(): Tool {
     return {
-      name: 'rag_query',
+      name: 'ask_index',
       description: `Retrieval-Augmented Generation - search your content then generate direct answers using an LLM.
 
 Use this tool when you want direct answers to questions, not just search results.
@@ -104,9 +104,9 @@ Raises:
     const startTime = Date.now();
     
     try {
-      logger.info('Executing rag_query', { 
+      logger.info('Executing ask_index', {
         question: args.question?.substring(0, 100),
-        maxSources: args.maxSources 
+        maxSources: args.maxSources
       });
 
       if (!args.question) {

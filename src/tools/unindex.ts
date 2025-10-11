@@ -2,15 +2,15 @@ import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { WeaviateClientWrapper } from '../weaviate/client.js';
 import { logger } from '../utils/logger.js';
 
-export class DeleteDocumentTool {
+export class UnindexTool {
   constructor(
     private weaviateClient: WeaviateClientWrapper
   ) {}
 
   getToolDefinition(): Tool {
     return {
-      name: 'delete_document',
-      description: `Delete a document from the index by its ID.
+      name: 'unindex',
+      description: `Remove a document from the index by its ID.
 
 Args:
     id: Document ID to delete (required)
@@ -38,7 +38,7 @@ Raises:
 
   async execute(args: any): Promise<any> {
     try {
-      logger.info('Executing delete_document', {
+      logger.info('Executing unindex', {
         id: args.id
       });
 

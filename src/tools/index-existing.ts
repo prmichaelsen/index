@@ -3,14 +3,14 @@ import { WeaviateClientWrapper } from '../weaviate/client.js';
 import { logger } from '../utils/logger.js';
 import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
-export class UpdateDocumentTool {
+export class IndexExistingTool {
   constructor(
     private weaviateClient: WeaviateClientWrapper
   ) {}
 
   getToolDefinition(): Tool {
     return {
-      name: 'update_document',
+      name: 'index_existing',
       description: `Update an existing document in the index with new metadata or content.
 
 Args:
@@ -114,7 +114,7 @@ Raises:
 
   async execute(args: any): Promise<any> {
     try {
-      logger.info('Executing update_document', {
+      logger.info('Executing index_existing', {
         id: args.id,
         hasContent: !!args.content,
         hasMetadata: !!args.metadata,

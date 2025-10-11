@@ -3,14 +3,14 @@ import { WeaviateClientWrapper } from '../weaviate/client.js';
 import { logger } from '../utils/logger.js';
 import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
-export class AddDocumentTool {
+export class IndexNewTool {
   constructor(
     private weaviateClient: WeaviateClientWrapper
   ) {}
 
   getToolDefinition(): Tool {
     return {
-      name: 'add_document',
+      name: 'index_new',
       description: `Index new content with metadata for semantic search.
 
 Args:
@@ -110,7 +110,7 @@ Raises:
 
   async execute(args: any): Promise<any> {
     try {
-      logger.info('Executing add_document', {
+      logger.info('Executing index_new', {
         contentType: args.metadata?.contentType,
         hasImage: !!args.image
       });

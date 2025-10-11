@@ -3,12 +3,12 @@ import { WeaviateClientWrapper } from '../weaviate/client.js';
 import { logger } from '../utils/logger.js';
 import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
-export class GetSimilarTool {
+export class FindSimilarInIndexTool {
   constructor(private weaviateClient: WeaviateClientWrapper) {}
 
   getToolDefinition(): Tool {
     return {
-      name: 'get_similar',
+      name: 'find_similar_in_index',
       description: `Find content similar to a specific document or code snippet for content discovery.
 
 Use this tool to discover related content, find code patterns, or locate similar implementations.
@@ -103,10 +103,10 @@ Raises:
     const startTime = Date.now();
     
     try {
-      logger.info('Executing get_similar', { 
+      logger.info('Executing find_similar_in_index', {
         hasReferenceContent: !!args.referenceContent,
         referenceId: args.referenceId,
-        threshold: args.similarityThreshold 
+        threshold: args.similarityThreshold
       });
 
       // Validate that we have either reference content or reference ID
