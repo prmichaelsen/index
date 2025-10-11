@@ -1,7 +1,7 @@
 {
-  "name": "arcane-knowledge",
+  "name": "@prmichaelsen/index",
   "version": "0.1.0",
-  "description": "Arcane Knowledge - MCP server providing semantic search and vector database capabilities using Weaviate",
+  "description": "Index - MCP server providing semantic search and vector database capabilities using Weaviate",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
@@ -18,8 +18,7 @@
     "weaviate",
     "vector-database",
     "semantic-search",
-    "ai",
-    "arcane-knowledge"
+    "ai"
   ],
   "author": "Patrick Michaelsen",
   "license": "MIT",
