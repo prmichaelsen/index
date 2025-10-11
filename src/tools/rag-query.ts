@@ -1,7 +1,7 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { WeaviateClientWrapper } from '../weaviate/client.js';
 import { logger } from '../utils/logger.js';
-import { CONTENT_TYPES } from '../types/content-types.js';
+import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
 export class RagQueryTool {
   constructor(private weaviateClient: WeaviateClientWrapper) {}
@@ -18,7 +18,7 @@ Args:
     question: Natural language question to answer using your indexed content
     maxSources: Maximum number of source documents to retrieve for context (1-10, default: 5)
     filters: Optional search filters to limit source documents (same as search_content)
-        contentType: Array of content types to search within
+        contentType: Array of content types to search within. ${CONTENT_TYPES_DESCRIPTION}
         fileExtension: Array of file extensions to filter by
         project: Project name to filter by
         tags: Array of tags to filter by

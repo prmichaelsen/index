@@ -1,7 +1,7 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { WeaviateClientWrapper } from '../weaviate/client.js';
 import { logger } from '../utils/logger.js';
-import { CONTENT_TYPES } from '../types/content-types.js';
+import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
 export class HybridSearchTool {
   constructor(private weaviateClient: WeaviateClientWrapper) {}
@@ -18,7 +18,7 @@ Args:
     query: Search query string for both semantic and keyword matching
     alpha: Balance between vector and keyword search (0.0 = pure keyword, 1.0 = pure semantic, 0.7 = balanced, default: 0.7)
     filters: Optional search filters object (same as search_content)
-        contentType: Array of content types to search
+        contentType: Array of content types to search. ${CONTENT_TYPES_DESCRIPTION}
         fileExtension: Array of file extensions to filter by
         dateRange: Date range filter with 'after' and 'before' ISO date strings
         project: Project name to filter by

@@ -1,7 +1,7 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { WeaviateClientWrapper } from '../weaviate/client.js';
 import { logger } from '../utils/logger.js';
-import { CONTENT_TYPES } from '../types/content-types.js';
+import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
 export class GetSimilarTool {
   constructor(private weaviateClient: WeaviateClientWrapper) {}
@@ -19,7 +19,7 @@ Args:
     referenceId: Optional Weaviate document ID to use as reference (alternative to referenceContent)
     similarityThreshold: Minimum similarity score (0.0-1.0, default: 0.7)
     filters: Optional search filters object (same as search_content)
-        contentType: Array of content types to search within
+        contentType: Array of content types to search within. ${CONTENT_TYPES_DESCRIPTION}
         fileExtension: Array of file extensions to filter by
         project: Project name to filter by
         tags: Array of tags to filter by

@@ -2,7 +2,7 @@ import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { SearchContentArgs, SearchContentResult } from '../types/mcp.js';
 import { WeaviateClientWrapper } from '../weaviate/client.js';
 import { logger } from '../utils/logger.js';
-import { CONTENT_TYPES } from '../types/content-types.js';
+import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
 export class SearchContentTool {
   constructor(private weaviateClient: WeaviateClientWrapper) {}
@@ -15,7 +15,7 @@ export class SearchContentTool {
 Args:
     query: Search query string for semantic or keyword matching
     filters: Optional search filters object
-        contentType: Array of content types to search (${JSON.stringify([...CONTENT_TYPES])})
+        contentType: Array of content types to search. ${CONTENT_TYPES_DESCRIPTION}
         fileExtension: Array of file extensions to filter by (e.g., ['.ts', '.js'])
         dateRange: Date range filter with 'after' and 'before' ISO date strings
         project: Project name to filter by
