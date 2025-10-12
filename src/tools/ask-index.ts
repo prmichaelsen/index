@@ -1,6 +1,7 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { WeaviateClientWrapper } from '../weaviate/client.js';
 import { logger } from '../utils/logger.js';
+import { serializeError } from '../utils/error-serializer.js';
 import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
 export class AskIndexTool {
@@ -110,7 +111,18 @@ Raises:
       });
 
       if (!args.question) {
-        throw new Error('Question is required');
+        const executionTime = Date.now() - startTime;
+        const validationError = new Error('Question is required');
+        return {
+          answer: '',
+          sources: [],
+          question: '',
+          sourceCount: 0,
+          confidence: 0.0,
+          executionTime,
+          error: true,
+          errorDetails: serializeError(validationError)
+        };
       }
 
       const question = args.question;
@@ -144,7 +156,18 @@ Raises:
       })) || [];
 
       if (sources.length === 0) {
-        throw new Error('No relevant sources found for the question');
+        const executionTime = Date.now() - startTime;
+        const noSourcesError = new Error('No relevant sources found for the question');
+        return {
+          answer: '',
+          sources: [],
+          question: question,
+          sourceCount: 0,
+          confidence: 0.0,
+          executionTime,
+          error: true,
+          errorDetails: serializeError(noSourcesError)
+        };
       }
 
       // Step 2: Generate answer using the sources
@@ -186,7 +209,16 @@ ${sources.slice(0, 3).map((source: any, idx: number) =>
       const executionTime = Date.now() - startTime;
       logger.error('RAG query failed', { error, executionTime: `${executionTime}ms` });
       
-      throw new Error(`RAG query failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return {
+        answer: '',
+        sources: [],
+        question: args.question || '',
+        sourceCount: 0,
+        confidence: 0.0,
+        executionTime,
+        error: true,
+        errorDetails: serializeError(error)
+      };
     }
   }
 }

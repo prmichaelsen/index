@@ -1,6 +1,7 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { WeaviateClientWrapper } from '../weaviate/client.js';
 import { logger } from '../utils/logger.js';
+import { serializeError } from '../utils/error-serializer.js';
 import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
 export class SearchIndexTool {
@@ -204,7 +205,16 @@ Raises:
       const executionTime = Date.now() - startTime;
       logger.error('Search failed', { error, executionTime: `${executionTime}ms` });
       
-      throw new Error(`Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return {
+        results: [],
+        total: 0,
+        query: args.query || '',
+        alpha: args.alpha !== undefined ? args.alpha : 0.7,
+        filters: args.filters || {},
+        executionTime,
+        error: true,
+        errorDetails: serializeError(error)
+      };
     }
   }
 }

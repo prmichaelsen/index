@@ -84,70 +84,59 @@ class WeaviateMCPServer {
       const { name, arguments: args } = request.params;
 
       try {
+        let result: any;
+        
         switch (name) {
           case 'search_index':
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify(await this.searchIndexTool.execute(args as any), null, 2),
-                },
-              ],
-            };
+            result = await this.searchIndexTool.execute(args as any);
+            break;
 
           case 'index_new':
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify(await this.indexNewTool.execute(args as any), null, 2),
-                },
-              ],
-            };
+            result = await this.indexNewTool.execute(args as any);
+            break;
 
           case 'index_existing':
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify(await this.indexExistingTool.execute(args as any), null, 2),
-                },
-              ],
-            };
+            result = await this.indexExistingTool.execute(args as any);
+            break;
 
           case 'unindex':
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify(await this.unindexTool.execute(args as any), null, 2),
-                },
-              ],
-            };
+            result = await this.unindexTool.execute(args as any);
+            break;
 
           case 'find_similar_in_index':
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify(await this.findSimilarInIndexTool.execute(args as any), null, 2),
-                },
-              ],
-            };
+            result = await this.findSimilarInIndexTool.execute(args as any);
+            break;
 
           case 'ask_index':
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify(await this.askIndexTool.execute(args as any), null, 2),
-                },
-              ],
-            };
+            result = await this.askIndexTool.execute(args as any);
+            break;
 
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
+
+        // Check if the tool returned an error response
+        if (result.error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        // Normal successful response
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
       } catch (error) {
         logger.error(`Tool execution failed for ${name}:`, error);
         return {

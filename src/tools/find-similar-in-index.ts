@@ -1,6 +1,7 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { WeaviateClientWrapper } from '../weaviate/client.js';
 import { logger } from '../utils/logger.js';
+import { serializeError } from '../utils/error-serializer.js';
 import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
 export class FindSimilarInIndexTool {
@@ -111,7 +112,18 @@ Raises:
 
       // Validate that we have either reference content or reference ID
       if (!args.referenceContent && !args.referenceId) {
-        throw new Error('Either referenceContent or referenceId is required');
+        const executionTime = Date.now() - startTime;
+        const validationError = new Error('Either referenceContent or referenceId is required');
+        return {
+          results: [],
+          referenceContent: undefined,
+          referenceId: undefined,
+          similarityThreshold: args.similarityThreshold || 0.7,
+          filters: args.filters || {},
+          executionTime,
+          error: true,
+          errorDetails: serializeError(validationError)
+        };
       }
 
       const similarityThreshold = args.similarityThreshold || 0.7;
@@ -129,7 +141,18 @@ Raises:
         // 1. Create a temporary document with the reference content
         // 2. Use its vector for similarity search
         // 3. Clean up the temporary document
-        throw new Error('Reference content similarity search not yet implemented - use referenceId instead');
+        const executionTime = Date.now() - startTime;
+        const notImplementedError = new Error('Reference content similarity search not yet implemented - use referenceId instead');
+        return {
+          results: [],
+          referenceContent: args.referenceContent?.substring(0, 200) + '...',
+          referenceId: undefined,
+          similarityThreshold: args.similarityThreshold || 0.7,
+          filters: args.filters || {},
+          executionTime,
+          error: true,
+          errorDetails: serializeError(notImplementedError)
+        };
       }
 
       // Transform Weaviate results to our format
@@ -180,7 +203,16 @@ Raises:
       const executionTime = Date.now() - startTime;
       logger.error('Similar content search failed', { error, executionTime: `${executionTime}ms` });
       
-      throw new Error(`Similar content search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return {
+        results: [],
+        referenceContent: args.referenceContent ? args.referenceContent.substring(0, 200) + '...' : undefined,
+        referenceId: args.referenceId,
+        similarityThreshold: args.similarityThreshold || 0.7,
+        filters: args.filters || {},
+        executionTime,
+        error: true,
+        errorDetails: serializeError(error)
+      };
     }
   }
 }
