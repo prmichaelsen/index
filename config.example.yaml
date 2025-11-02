@@ -1,0 +1,424 @@
+# Index MCP Server Configuration Example
+# Optimized for multi-project code indexing across multiple repositories and directories
+# Copy this file to config.yaml and customize for your environment
+
+server:
+  name: "index-mcp-server"
+  version: "0.1.0"
+  description: "Multi-project code indexing and semantic search server"
+
+# Weaviate instance configuration
+weaviate:
+  url: "http://localhost:8080"  # Can be overridden by WEAVIATE_URL env var
+  # apiKey: "your-api-key-here"  # Optional, can be set via WEAVIATE_API_KEY env var
+  timeout: 30000  # Request timeout in milliseconds
+  retries: 3      # Number of retry attempts
+  # openaiApiKey: "sk-..."  # Optional, can be set via OPENAI_APIKEY env var
+
+# Schema configuration for the vector database
+schema:
+  collectionName: "Document"
+  
+  # Vectorizer configuration
+  vectorizer:
+    type: "text2vec-openai"
+    model: "text-embedding-3-small"
+    # options:
+    #   dimensions: 1536
+  
+  # Properties/fields for code artifacts
+  properties:
+    - name: "content"
+      dataType: "TEXT"
+      description: "Source code or document content"
+    
+    - name: "contentType"
+      dataType: "TEXT"
+      description: "Type of artifact (code, documentation, etc.)"
+    
+    - name: "title"
+      dataType: "TEXT"
+      description: "File or module name"
+    
+    - name: "description"
+      dataType: "TEXT"
+      description: "Brief description of purpose"
+    
+    - name: "filePath"
+      dataType: "TEXT"
+      description: "Relative path from project root"
+    
+    - name: "fileExtension"
+      dataType: "TEXT"
+      description: "File extension"
+    
+    - name: "project"
+      dataType: "TEXT"
+      description: "Project name or identifier"
+    
+    - name: "repository"
+      dataType: "TEXT"
+      description: "Repository name or URL"
+    
+    - name: "branch"
+      dataType: "TEXT"
+      description: "Git branch name"
+    
+    - name: "directory"
+      dataType: "TEXT"
+      description: "Parent directory path"
+    
+    - name: "tags"
+      dataType: "TEXT_ARRAY"
+      description: "Categorization tags"
+    
+    - name: "language"
+      dataType: "TEXT"
+      description: "Programming language"
+    
+    - name: "framework"
+      dataType: "TEXT"
+      description: "Framework or library used"
+    
+    - name: "dependencies"
+      dataType: "TEXT_ARRAY"
+      description: "List of dependencies"
+    
+    - name: "functions"
+      dataType: "TEXT_ARRAY"
+      description: "Function names in the file"
+    
+    - name: "classes"
+      dataType: "TEXT_ARRAY"
+      description: "Class names in the file"
+    
+    - name: "imports"
+      dataType: "TEXT_ARRAY"
+      description: "Import statements"
+    
+    - name: "complexity"
+      dataType: "TEXT"
+      description: "Code complexity level"
+    
+    - name: "lineCount"
+      dataType: "INT"
+      description: "Number of lines of code"
+    
+    - name: "author"
+      dataType: "TEXT"
+      description: "Original author"
+    
+    - name: "lastModifiedBy"
+      dataType: "TEXT"
+      description: "Last modifier"
+    
+    - name: "createdAt"
+      dataType: "DATE"
+      description: "Creation timestamp"
+    
+    - name: "updatedAt"
+      dataType: "DATE"
+      description: "Last update timestamp"
+    
+    - name: "priority"
+      dataType: "TEXT"
+      description: "Priority level"
+    
+    - name: "status"
+      dataType: "TEXT"
+      description: "Current status"
+
+# Shared definitions for multi-project code indexing
+shared:
+  # Content types focused on code and development artifacts
+  contentTypes:
+    - "code"              # Source code files (.ts, .js, .py, .java, etc.)
+    - "documentation"     # Technical documentation (README, docs, wikis)
+    - "configuration"     # Config files (package.json, tsconfig.json, .env, etc.)
+    - "test"             # Test files (unit, integration, e2e)
+    - "script"           # Build/deployment scripts (bash, powershell, etc.)
+    - "note"             # Development notes and comments
+    - "todo"             # Task lists and backlog items
+    - "api-spec"         # API specifications (OpenAPI, GraphQL schemas)
+    - "schema"           # Database schemas and migrations
+    - "readme"           # README and getting started files
+  
+  # Priority levels for code artifacts
+  priorities:
+    - "critical"    # Core functionality, security issues, breaking changes
+    - "high"        # Important features, major bugs, performance issues
+    - "medium"      # Standard features, minor bugs, refactoring
+    - "low"         # Nice-to-have, documentation updates, minor improvements
+  
+  # Complexity levels for code analysis
+  complexityLevels:
+    - "simple"       # < 10 cyclomatic complexity, straightforward logic
+    - "moderate"     # 10-20 cyclomatic complexity, some branching
+    - "complex"      # 21-50 cyclomatic complexity, significant branching
+    - "very-complex" # > 50 cyclomatic complexity, needs refactoring
+  
+  # Common programming languages
+  languages:
+    - "typescript"
+    - "javascript"
+    - "python"
+    - "java"
+    - "go"
+    - "rust"
+    - "c"
+    - "cpp"
+    - "csharp"
+    - "ruby"
+    - "php"
+    - "swift"
+    - "kotlin"
+    - "scala"
+    - "shell"
+    - "sql"
+    - "html"
+    - "css"
+    - "yaml"
+    - "json"
+    - "markdown"
+  
+  # Metadata fields for code indexing
+  # These fields are used by index_new and index_existing tools
+  metadataFields:
+    - name: "contentType"
+      type: "string"
+      description: "Type of code artifact (code, documentation, test, etc.)"
+      required: true
+    
+    - name: "title"
+      type: "string"
+      description: "File or module name (e.g., 'UserService.ts', 'authentication.py')"
+      required: true
+    
+    - name: "description"
+      type: "string"
+      description: "Brief description of the code's purpose and functionality"
+      required: true
+    
+    - name: "filePath"
+      type: "string"
+      description: "Relative path from project root (e.g., 'src/services/user.ts')"
+      required: true
+    
+    - name: "fileExtension"
+      type: "string"
+      description: "File extension (e.g., '.ts', '.py', '.java')"
+    
+    - name: "project"
+      type: "string"
+      description: "Project name or identifier (e.g., 'backend-api', 'frontend-app')"
+      required: true
+    
+    - name: "repository"
+      type: "string"
+      description: "Repository name or URL (e.g., 'github.com/org/repo')"
+    
+    - name: "branch"
+      type: "string"
+      description: "Git branch name (e.g., 'main', 'develop', 'feature/auth')"
+    
+    - name: "directory"
+      type: "string"
+      description: "Parent directory path (e.g., 'src/services', 'tests/unit')"
+    
+    - name: "language"
+      type: "string"
+      description: "Programming language (e.g., 'typescript', 'python', 'java')"
+    
+    - name: "framework"
+      type: "string"
+      description: "Framework or library (e.g., 'React', 'Django', 'Spring Boot')"
+    
+    - name: "tags"
+      type: "array"
+      description: "Tags for categorization (e.g., ['api', 'authentication', 'database'])"
+      required: true
+    
+    - name: "dependencies"
+      type: "array"
+      description: "List of dependencies or imports (e.g., ['express', 'mongoose'])"
+    
+    - name: "functions"
+      type: "array"
+      description: "Function names defined in the file (e.g., ['createUser', 'deleteUser'])"
+    
+    - name: "classes"
+      type: "array"
+      description: "Class names defined in the file (e.g., ['UserService', 'AuthController'])"
+    
+    - name: "imports"
+      type: "array"
+      description: "Import statements or required modules"
+    
+    - name: "complexity"
+      type: "string"
+      description: "Code complexity level (simple, moderate, complex, very-complex)"
+    
+    - name: "lineCount"
+      type: "number"
+      description: "Number of lines of code (excluding comments and blank lines)"
+    
+    - name: "priority"
+      type: "string"
+      description: "Priority level (critical, high, medium, low)"
+    
+    - name: "status"
+      type: "string"
+      description: "Status (e.g., 'active', 'deprecated', 'experimental', 'archived')"
+    
+    - name: "author"
+      type: "string"
+      description: "Original author or creator"
+    
+    - name: "lastModifiedBy"
+      type: "string"
+      description: "Last person to modify the file"
+  
+  # Filter fields for searching code
+  # These fields are used by search_index and ask_index tools
+  filterFields:
+    - name: "contentType"
+      type: "array"
+      description: "Filter by content type (code, documentation, test, etc.)"
+    
+    - name: "project"
+      type: "string"
+      description: "Filter by project name (e.g., 'backend-api')"
+    
+    - name: "repository"
+      type: "string"
+      description: "Filter by repository (e.g., 'github.com/org/repo')"
+    
+    - name: "branch"
+      type: "string"
+      description: "Filter by git branch (e.g., 'main', 'develop')"
+    
+    - name: "directory"
+      type: "string"
+      description: "Filter by directory path (e.g., 'src/services')"
+    
+    - name: "language"
+      type: "string"
+      description: "Filter by programming language (e.g., 'typescript')"
+    
+    - name: "framework"
+      type: "string"
+      description: "Filter by framework (e.g., 'React', 'Django')"
+    
+    - name: "fileExtension"
+      type: "array"
+      description: "Filter by file extensions (e.g., ['.ts', '.tsx'])"
+    
+    - name: "tags"
+      type: "array"
+      description: "Filter by tags (e.g., ['api', 'authentication'])"
+    
+    - name: "complexity"
+      type: "string"
+      description: "Filter by complexity level (simple, moderate, complex, very-complex)"
+    
+    - name: "priority"
+      type: "string"
+      description: "Filter by priority level (critical, high, medium, low)"
+    
+    - name: "status"
+      type: "string"
+      description: "Filter by status (active, deprecated, experimental, archived)"
+    
+    - name: "author"
+      type: "string"
+      description: "Filter by original author"
+    
+    - name: "hasFunction"
+      type: "string"
+      description: "Filter by presence of specific function name"
+    
+    - name: "hasClass"
+      type: "string"
+      description: "Filter by presence of specific class name"
+    
+    - name: "hasDependency"
+      type: "string"
+      description: "Filter by presence of specific dependency"
+    
+    - name: "lineCountRange"
+      type: "object"
+      description: "Filter by line count range"
+      properties:
+        min: "Minimum line count (e.g., 100)"
+        max: "Maximum line count (e.g., 500)"
+    
+    - name: "dateRange"
+      type: "object"
+      description: "Filter by date range"
+      properties:
+        after: "ISO date string (e.g., '2024-01-01')"
+        before: "ISO date string (e.g., '2024-12-31')"
+
+# Tool configurations
+# Tool names and descriptions are hardcoded in the tool classes
+# This section only controls which tools are enabled
+tools:
+  - name: "search_index"
+    enabled: true
+    # Hybrid search combining semantic and keyword matching
+  
+  - name: "index_new"
+    enabled: true
+    # Index new code files and artifacts
+  
+  - name: "index_existing"
+    enabled: true
+    # Update existing indexed code
+  
+  - name: "unindex"
+    enabled: true
+    # Remove code from the index
+  
+  - name: "find_similar_in_index"
+    enabled: true
+    # Find similar code patterns and implementations
+  
+  - name: "ask_index"
+    enabled: true
+    # RAG-based question answering about your codebase
+  
+  - name: "bulk_index"
+    enabled: true
+    # Bulk index multiple files at once for efficient project indexing
+
+# Example Usage Scenarios:
+#
+# 1. Index a TypeScript service file:
+#    metadata:
+#      contentType: "code"
+#      title: "UserService.ts"
+#      description: "User management service with CRUD operations"
+#      filePath: "src/services/UserService.ts"
+#      fileExtension: ".ts"
+#      project: "backend-api"
+#      repository: "github.com/myorg/backend"
+#      branch: "main"
+#      directory: "src/services"
+#      language: "typescript"
+#      framework: "Express"
+#      tags: ["api", "user-management", "crud"]
+#      functions: ["createUser", "getUser", "updateUser", "deleteUser"]
+#      classes: ["UserService"]
+#
+# 2. Search for authentication code:
+#    filters:
+#      contentType: ["code"]
+#      tags: ["authentication", "security"]
+#      language: "typescript"
+#      project: "backend-api"
+#
+# 3. Find complex code that needs refactoring:
+#    filters:
+#      complexity: "very-complex"
+#      lineCountRange: { min: 200 }
+#      status: "active"

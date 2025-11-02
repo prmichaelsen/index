@@ -74,4 +74,7 @@ weaviate-data/
 # Backup files
 *.bak
 *.backup
+
+# Configuration files (may contain sensitive data)
+config.yaml
 *.old

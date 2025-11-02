@@ -1,32 +1,32 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { readFileSync } from 'fs';
 import { WeaviateClientWrapper } from '../weaviate/client.js';
+import { SharedDefinitions } from '../types/config.js';
+import { SchemaBuilder } from '../utils/schema-builder.js';
+import { canIndexFile } from '../utils/security-filter.js';
 import { logger } from '../utils/logger.js';
-import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
 export class IndexNewTool {
+  private schemaBuilder: SchemaBuilder;
+
   constructor(
-    private weaviateClient: WeaviateClientWrapper
-  ) {}
+    private weaviateClient: WeaviateClientWrapper,
+    sharedDefinitions?: SharedDefinitions
+  ) {
+    this.schemaBuilder = new SchemaBuilder(sharedDefinitions);
+  }
 
   getToolDefinition(): Tool {
+    const metadataSchema = this.schemaBuilder.buildMetadataSchema();
+    
     return {
       name: 'index_new',
       description: `Index new content with metadata for semantic search.
 
 Args:
-    content: Document content to be indexed
-    metadata: Document metadata object (required)
-        contentType: ${CONTENT_TYPES_DESCRIPTION}
-        title: Document title (required)
-        description: Document description (required)
-        tags: Array of document tags (required)
-        filePath: File path if applicable (optional)
-        fileExtension: File extension (optional)
-        project: Project name (optional)
-        priority: Priority level ('low', 'medium', 'high') (optional)
-        status: Document status (optional)
-        language: Programming language (optional)
-        author: Document author (optional)
+    content: Document content to be indexed (optional if filePath provided)
+    filePath: Path to file to read and index (optional if content provided)
+    metadata: Document metadata object (required) - see metadata schema for available fields
     image: Base64 encoded image data for visual content (optional)
 
 Returns:
@@ -36,74 +36,25 @@ Returns:
         message: Status message describing the result
 
 Raises:
-    Exception: If content, metadata.contentType, metadata.title, metadata.description, or metadata.tags is missing, or if there is an error indexing to Weaviate`,
+    Exception: If neither content nor filePath is provided, or if metadata is invalid`,
       inputSchema: {
         type: 'object',
         properties: {
           content: {
             type: 'string',
-            description: 'Document content'
+            description: 'Document content (optional if filePath provided)'
           },
-          metadata: {
-            type: 'object',
-            properties: {
-              contentType: {
-                type: 'string',
-                enum: CONTENT_TYPES,
-                description: 'Type of content'
-              },
-              title: {
-                type: 'string',
-                description: 'Document title (required)'
-              },
-              description: {
-                type: 'string',
-                description: 'Document description (required)'
-              },
-              filePath: {
-                type: 'string',
-                description: 'File path if applicable'
-              },
-              fileExtension: {
-                type: 'string',
-                description: 'File extension'
-              },
-              project: {
-                type: 'string',
-                description: 'Project name'
-              },
-              tags: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Document tags (required)'
-              },
-              priority: {
-                type: 'string',
-                enum: ['low', 'medium', 'high'],
-                description: 'Priority level'
-              },
-              status: {
-                type: 'string',
-                description: 'Document status'
-              },
-              language: {
-                type: 'string',
-                description: 'Programming language'
-              },
-              author: {
-                type: 'string',
-                description: 'Document author'
-              }
-            },
-            required: ['contentType', 'title', 'description', 'tags'],
-            description: 'Document metadata'
+          filePath: {
+            type: 'string',
+            description: 'Path to file to read and index (optional if content provided)'
           },
+          metadata: metadataSchema,
           image: {
             type: 'string',
             description: 'Base64 encoded image data for visual content'
           }
         },
-        required: ['content', 'metadata']
+        required: ['metadata']
       }
     };
   }
@@ -112,12 +63,38 @@ Raises:
     try {
       logger.info('Executing index_new', {
         contentType: args.metadata?.contentType,
-        hasImage: !!args.image
+        hasImage: !!args.image,
+        hasFilePath: !!args.filePath
       });
 
-      // Client must provide all required metadata - no extraction
-      if (!args.content) {
-        throw new Error('Content is required');
+      // Get content from either direct content or file path
+      let content: string;
+      
+      if (args.content) {
+        content = args.content;
+      } else if (args.filePath) {
+        const filePath: string = args.filePath;
+        
+        // Security check: prevent indexing sensitive files
+        const securityCheck = canIndexFile(filePath);
+        if (!securityCheck.isSafe) {
+          throw new Error(`Security: Cannot index sensitive file - ${securityCheck.reason}`);
+        }
+        
+        try {
+          content = readFileSync(filePath, 'utf-8');
+          logger.info('Read file content', { filePath, length: content.length });
+          
+          // Security check: scan content for sensitive data
+          const contentCheck = canIndexFile(filePath, content);
+          if (!contentCheck.isSafe) {
+            throw new Error(`Security: File contains sensitive data - ${contentCheck.reason}`);
+          }
+        } catch (error) {
+          throw new Error(`Failed to read file ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      } else {
+        throw new Error('Either content or filePath is required');
       }
       
       if (!args.metadata?.contentType) {
@@ -138,7 +115,7 @@ Raises:
 
       // Use metadata exactly as provided by client
       const documentData: Record<string, any> = {
-        content: args.content,
+        content: content,
         contentType: args.metadata.contentType,
         title: args.metadata.title,
         description: args.metadata.description,

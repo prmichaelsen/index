@@ -1,28 +1,52 @@
 import weaviate, { WeaviateClient, ApiKey } from 'weaviate-client';
 import { WeaviateConfig } from '../types/weaviate.js';
+import { SchemaConfig } from '../types/config.js';
 import { logger } from '../utils/logger.js';
 
 export class WeaviateClientWrapper {
   private client!: WeaviateClient;
   private config: WeaviateConfig;
+  private schemaConfig?: SchemaConfig;
   private isConnected = false;
 
-  constructor(config: WeaviateConfig) {
+  constructor(config: WeaviateConfig, schemaConfig?: SchemaConfig) {
     this.config = config;
+    this.schemaConfig = schemaConfig;
   }
 
   async connect(): Promise<void> {
     try {
       // Initialize Weaviate client with v3 API
-      this.client = await weaviate.connectToWeaviateCloud(
-        this.config.url,
-        {
-          authCredentials: this.config.apiKey ? new ApiKey(this.config.apiKey) : undefined,
+      const openaiApiKey = this.config.openaiApiKey || process.env.OPENAI_APIKEY || '';
+      
+      // Determine if connecting to local or cloud instance
+      const isLocal = this.config.url.includes('localhost') || this.config.url.includes('127.0.0.1');
+      
+      if (isLocal) {
+        // Connect to local Weaviate instance
+        // Extract host and port from URL
+        const urlObj = new URL(this.config.url);
+        const port = urlObj.port ? parseInt(urlObj.port) : 8080;
+        
+        this.client = await weaviate.connectToLocal({
+          host: urlObj.hostname,
+          port: port,
           headers: {
-            'X-OpenAI-Api-Key': process.env.OPENAI_APIKEY || ''
+            'X-OpenAI-Api-Key': openaiApiKey
           }
-        }
-      );
+        });
+      } else {
+        // Connect to Weaviate Cloud
+        this.client = await weaviate.connectToWeaviateCloud(
+          this.config.url,
+          {
+            authCredentials: this.config.apiKey ? new ApiKey(this.config.apiKey) : undefined,
+            headers: {
+              'X-OpenAI-Api-Key': openaiApiKey
+            }
+          }
+        );
+      }
 
       // Test connection
       await this.client.collections.listAll();
@@ -37,49 +61,112 @@ export class WeaviateClientWrapper {
 
   async ensureSchema(): Promise<void> {
     try {
-      // Check if Document collection exists
+      // Use schema config if provided, otherwise use defaults
+      const collectionName = this.schemaConfig?.collectionName || 'Document';
+      const vectorizerConfig = this.schemaConfig?.vectorizer || {
+        type: 'text2vec-openai',
+        model: 'text-embedding-3-small'
+      };
+      
+      // Check if collection exists
       const collections = await this.client.collections.listAll();
-      const documentCollection = collections.find(col => col.name === 'Document');
+      const existingCollection = collections.find(col => col.name === collectionName);
 
-      if (!documentCollection) {
-        logger.info('Creating Document collection...');
+      if (!existingCollection) {
+        logger.info(`Creating ${collectionName} collection...`);
+        
+        // Build vectorizer configuration
+        let vectorizer;
+        switch (vectorizerConfig.type) {
+          case 'text2vec-openai':
+            vectorizer = weaviate.configure.vectorizer.text2VecOpenAI({
+              model: vectorizerConfig.model || 'text-embedding-3-small',
+              ...vectorizerConfig.options
+            });
+            break;
+          case 'text2vec-cohere':
+            vectorizer = weaviate.configure.vectorizer.text2VecCohere({
+              model: vectorizerConfig.model,
+              ...vectorizerConfig.options
+            });
+            break;
+          case 'text2vec-huggingface':
+            vectorizer = weaviate.configure.vectorizer.text2VecHuggingFace({
+              model: vectorizerConfig.model,
+              ...vectorizerConfig.options
+            });
+            break;
+          case 'none':
+            vectorizer = weaviate.configure.vectorizer.none();
+            break;
+          default:
+            vectorizer = weaviate.configure.vectorizer.text2VecOpenAI({
+              model: 'text-embedding-3-small'
+            });
+        }
+        
+        // Build properties from config or use defaults
+        const properties = this.schemaConfig?.properties?.map(prop => ({
+          name: prop.name,
+          dataType: this.mapDataType(prop.dataType)
+        })) || this.getDefaultProperties();
         
         await this.client.collections.create({
-          name: 'Document',
-          vectorizers: weaviate.configure.vectorizer.text2VecOpenAI({
-            model: 'text-embedding-3-small'
-          }),
-          properties: [
-            { name: 'content', dataType: weaviate.configure.dataType.TEXT },
-            { name: 'contentType', dataType: weaviate.configure.dataType.TEXT },
-            { name: 'title', dataType: weaviate.configure.dataType.TEXT },
-            { name: 'description', dataType: weaviate.configure.dataType.TEXT },
-            { name: 'filePath', dataType: weaviate.configure.dataType.TEXT },
-            { name: 'fileExtension', dataType: weaviate.configure.dataType.TEXT },
-            { name: 'project', dataType: weaviate.configure.dataType.TEXT },
-            { name: 'tags', dataType: weaviate.configure.dataType.TEXT_ARRAY },
-            { name: 'priority', dataType: weaviate.configure.dataType.TEXT },
-            { name: 'status', dataType: weaviate.configure.dataType.TEXT },
-            { name: 'language', dataType: weaviate.configure.dataType.TEXT },
-            { name: 'createdAt', dataType: weaviate.configure.dataType.DATE },
-            { name: 'updatedAt', dataType: weaviate.configure.dataType.DATE },
-            { name: 'author', dataType: weaviate.configure.dataType.TEXT },
-            // Note: Image support will be added later with external processing
-            { name: 'extractedText', dataType: weaviate.configure.dataType.TEXT },
-            { name: 'detectedObjects', dataType: weaviate.configure.dataType.TEXT_ARRAY },
-            { name: 'imageType', dataType: weaviate.configure.dataType.TEXT },
-            { name: 'dimensions', dataType: weaviate.configure.dataType.TEXT }
-          ]
+          name: collectionName,
+          vectorizers: vectorizer,
+          properties
         });
         
-        logger.info('Document collection created successfully');
+        logger.info(`${collectionName} collection created successfully`);
       } else {
-        logger.info('Document collection already exists');
+        logger.info(`${collectionName} collection already exists`);
       }
     } catch (error) {
       logger.error('Failed to ensure schema:', error);
       throw new Error(`Failed to ensure schema: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  private mapDataType(dataType: string): any {
+    switch (dataType) {
+      case 'TEXT':
+        return weaviate.configure.dataType.TEXT;
+      case 'TEXT_ARRAY':
+        return weaviate.configure.dataType.TEXT_ARRAY;
+      case 'DATE':
+        return weaviate.configure.dataType.DATE;
+      case 'NUMBER':
+        return weaviate.configure.dataType.NUMBER;
+      case 'INT':
+        return weaviate.configure.dataType.INT;
+      case 'BOOLEAN':
+        return weaviate.configure.dataType.BOOLEAN;
+      default:
+        return weaviate.configure.dataType.TEXT;
+    }
+  }
+
+  private getDefaultProperties() {
+    return [
+      { name: 'content', dataType: weaviate.configure.dataType.TEXT },
+      { name: 'contentType', dataType: weaviate.configure.dataType.TEXT },
+      { name: 'title', dataType: weaviate.configure.dataType.TEXT },
+      { name: 'description', dataType: weaviate.configure.dataType.TEXT },
+      { name: 'filePath', dataType: weaviate.configure.dataType.TEXT },
+      { name: 'fileExtension', dataType: weaviate.configure.dataType.TEXT },
+      { name: 'project', dataType: weaviate.configure.dataType.TEXT },
+      { name: 'tags', dataType: weaviate.configure.dataType.TEXT_ARRAY },
+      { name: 'priority', dataType: weaviate.configure.dataType.TEXT },
+      { name: 'status', dataType: weaviate.configure.dataType.TEXT },
+      { name: 'language', dataType: weaviate.configure.dataType.TEXT },
+      { name: 'createdAt', dataType: weaviate.configure.dataType.DATE },
+      { name: 'updatedAt', dataType: weaviate.configure.dataType.DATE },
+      { name: 'author', dataType: weaviate.configure.dataType.TEXT },
+      { name: 'extractedText', dataType: weaviate.configure.dataType.TEXT },
+      { name: 'detectedObjects', dataType: weaviate.configure.dataType.TEXT_ARRAY },
+      { name: 'imageType', dataType: weaviate.configure.dataType.TEXT },
+      { name: 'dimensions', dataType: weaviate.configure.dataType.TEXT }
+    ];
   }
 
   async addDocument(data: Record<string, any>): Promise<string> {
@@ -88,7 +175,8 @@ export class WeaviateClientWrapper {
     }
 
     try {
-      const collection = this.client.collections.get('Document');
+      const collectionName = this.schemaConfig?.collectionName || 'Document';
+      const collection = this.client.collections.get(collectionName);
       const result = await collection.data.insert(data);
 
       logger.info(`Document added with ID: ${result}`);
@@ -105,7 +193,8 @@ export class WeaviateClientWrapper {
     }
 
     try {
-      const collection = this.client.collections.get('Document');
+      const collectionName = this.schemaConfig?.collectionName || 'Document';
+      const collection = this.client.collections.get(collectionName);
       await collection.data.update({
         id,
         properties: data
@@ -124,7 +213,8 @@ export class WeaviateClientWrapper {
     }
 
     try {
-      const collection = this.client.collections.get('Document');
+      const collectionName = this.schemaConfig?.collectionName || 'Document';
+      const collection = this.client.collections.get(collectionName);
       await collection.data.deleteById(id);
 
       logger.info(`Document deleted with ID: ${id}`);
@@ -140,7 +230,8 @@ export class WeaviateClientWrapper {
     }
 
     try {
-      const collection = this.client.collections.get('Document');
+      const collectionName = this.schemaConfig?.collectionName || 'Document';
+      const collection = this.client.collections.get(collectionName);
       
       const searchOptions: any = {
         limit,
@@ -186,7 +277,8 @@ export class WeaviateClientWrapper {
     }
 
     try {
-      const collection = this.client.collections.get('Document');
+      const collectionName = this.schemaConfig?.collectionName || 'Document';
+      const collection = this.client.collections.get(collectionName);
       
       const searchOptions: any = {
         limit,
@@ -233,7 +325,8 @@ export class WeaviateClientWrapper {
     }
 
     try {
-      const collection = this.client.collections.get('Document');
+      const collectionName = this.schemaConfig?.collectionName || 'Document';
+      const collection = this.client.collections.get(collectionName);
       
       const result = await collection.query.nearObject(referenceId, {
         limit,

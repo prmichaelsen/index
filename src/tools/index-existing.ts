@@ -1,14 +1,27 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { WeaviateClientWrapper } from '../weaviate/client.js';
+import { SharedDefinitions } from '../types/config.js';
+import { SchemaBuilder } from '../utils/schema-builder.js';
 import { logger } from '../utils/logger.js';
-import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
 export class IndexExistingTool {
+  private schemaBuilder: SchemaBuilder;
+
   constructor(
-    private weaviateClient: WeaviateClientWrapper
-  ) {}
+    private weaviateClient: WeaviateClientWrapper,
+    sharedDefinitions?: SharedDefinitions
+  ) {
+    this.schemaBuilder = new SchemaBuilder(sharedDefinitions);
+  }
 
   getToolDefinition(): Tool {
+    const metadataSchema = this.schemaBuilder.buildMetadataSchema();
+    // For updates, make all metadata fields optional
+    const updateMetadataSchema = {
+      ...metadataSchema,
+      required: undefined
+    };
+    
     return {
       name: 'index_existing',
       description: `Update an existing document in the index with new metadata or content.
@@ -16,18 +29,7 @@ export class IndexExistingTool {
 Args:
     id: Document ID to update (required)
     content: Updated document content (optional)
-    metadata: Updated document metadata object (optional)
-        contentType: ${CONTENT_TYPES_DESCRIPTION}
-        title: Document title
-        description: Document description
-        tags: Array of document tags
-        filePath: File path if applicable
-        fileExtension: File extension
-        project: Project name
-        priority: Priority level ('low', 'medium', 'high')
-        status: Document status
-        language: Programming language
-        author: Document author
+    metadata: Updated document metadata object (optional) - see metadata schema for available fields
     image: Base64 encoded image data for visual content (optional)
 
 Returns:
@@ -49,59 +51,7 @@ Raises:
             type: 'string',
             description: 'Updated document content'
           },
-          metadata: {
-            type: 'object',
-            properties: {
-              contentType: {
-                type: 'string',
-                enum: CONTENT_TYPES,
-                description: 'Type of content'
-              },
-              title: {
-                type: 'string',
-                description: 'Document title'
-              },
-              description: {
-                type: 'string',
-                description: 'Document description'
-              },
-              filePath: {
-                type: 'string',
-                description: 'File path if applicable'
-              },
-              fileExtension: {
-                type: 'string',
-                description: 'File extension'
-              },
-              project: {
-                type: 'string',
-                description: 'Project name'
-              },
-              tags: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Document tags'
-              },
-              priority: {
-                type: 'string',
-                enum: ['low', 'medium', 'high'],
-                description: 'Priority level'
-              },
-              status: {
-                type: 'string',
-                description: 'Document status'
-              },
-              language: {
-                type: 'string',
-                description: 'Programming language'
-              },
-              author: {
-                type: 'string',
-                description: 'Document author'
-              }
-            },
-            description: 'Document metadata to update'
-          },
+          metadata: updateMetadataSchema,
           image: {
             type: 'string',
             description: 'Base64 encoded image data for visual content'

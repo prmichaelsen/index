@@ -7,15 +7,10 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { config } from 'dotenv';
-import { createServer } from 'http';
 import { WeaviateClientWrapper } from './weaviate/client.js';
 import { WeaviateConfig } from './types/weaviate.js';
-import { SearchIndexTool } from './tools/search-index.js';
-import { IndexNewTool } from './tools/index-new.js';
-import { IndexExistingTool } from './tools/index-existing.js';
-import { UnindexTool } from './tools/unindex.js';
-import { FindSimilarInIndexTool } from './tools/find-similar-in-index.js';
-import { AskIndexTool } from './tools/ask-index.js';
+import { ToolFactory } from './tools/tool-factory.js';
+import { configLoader } from './utils/config-loader.js';
 import { logger } from './utils/logger.js';
 
 // Load environment variables
@@ -24,19 +19,18 @@ config();
 class WeaviateMCPServer {
   private server: Server;
   private weaviateClient: WeaviateClientWrapper;
-  private searchIndexTool: SearchIndexTool;
-  private indexNewTool: IndexNewTool;
-  private indexExistingTool: IndexExistingTool;
-  private unindexTool: UnindexTool;
-  private findSimilarInIndexTool: FindSimilarInIndexTool;
-  private askIndexTool: AskIndexTool;
+  private tools: any[];
+  private toolMap: Map<string, any>;
 
   constructor() {
-    // Initialize server
+    // Load configuration
+    const indexConfig = configLoader.loadFromEnvironment();
+
+    // Initialize server with config
     this.server = new Server(
       {
-        name: 'weaviate-mcp-server',
-        version: '0.1.0',
+        name: indexConfig.server.name,
+        version: indexConfig.server.version,
       },
       {
         capabilities: {
@@ -45,21 +39,27 @@ class WeaviateMCPServer {
       }
     );
 
-    // Initialize Weaviate client
+    // Initialize Weaviate client with config
     const weaviateConfig: WeaviateConfig = {
-      url: process.env.WEAVIATE_URL || 'http://localhost:8080',
-      apiKey: process.env.WEAVIATE_API_KEY,
-      timeout: parseInt(process.env.WEAVIATE_TIMEOUT || '30000'),
-      retries: parseInt(process.env.WEAVIATE_RETRIES || '3')
+      url: process.env.WEAVIATE_URL || indexConfig.weaviate.url,
+      apiKey: process.env.WEAVIATE_API_KEY || indexConfig.weaviate.apiKey,
+      timeout: indexConfig.weaviate.timeout || 30000,
+      retries: indexConfig.weaviate.retries || 3,
+      openaiApiKey: process.env.OPENAI_APIKEY || indexConfig.weaviate.openaiApiKey
     };
 
-    this.weaviateClient = new WeaviateClientWrapper(weaviateConfig);
-    this.searchIndexTool = new SearchIndexTool(this.weaviateClient);
-    this.indexNewTool = new IndexNewTool(this.weaviateClient);
-    this.indexExistingTool = new IndexExistingTool(this.weaviateClient);
-    this.unindexTool = new UnindexTool(this.weaviateClient);
-    this.findSimilarInIndexTool = new FindSimilarInIndexTool(this.weaviateClient);
-    this.askIndexTool = new AskIndexTool(this.weaviateClient);
+    this.weaviateClient = new WeaviateClientWrapper(weaviateConfig, indexConfig.schema);
+
+    // Create tools from configuration
+    const toolFactory = new ToolFactory(this.weaviateClient, indexConfig.shared);
+    this.tools = toolFactory.createTools(indexConfig.tools);
+    
+    // Create tool map for quick lookup
+    this.toolMap = new Map();
+    for (const tool of this.tools) {
+      const definition = tool.getToolDefinition();
+      this.toolMap.set(definition.name, tool);
+    }
 
     this.setupHandlers();
   }
@@ -68,14 +68,7 @@ class WeaviateMCPServer {
     // List available tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
-        tools: [
-          this.searchIndexTool.getToolDefinition(),
-          this.indexNewTool.getToolDefinition(),
-          this.indexExistingTool.getToolDefinition(),
-          this.unindexTool.getToolDefinition(),
-          this.findSimilarInIndexTool.getToolDefinition(),
-          this.askIndexTool.getToolDefinition()
-        ],
+        tools: this.tools.map(tool => tool.getToolDefinition()),
       };
     });
 
@@ -84,36 +77,12 @@ class WeaviateMCPServer {
       const { name, arguments: args } = request.params;
 
       try {
-        let result: any;
-        
-        switch (name) {
-          case 'search_index':
-            result = await this.searchIndexTool.execute(args as any);
-            break;
-
-          case 'index_new':
-            result = await this.indexNewTool.execute(args as any);
-            break;
-
-          case 'index_existing':
-            result = await this.indexExistingTool.execute(args as any);
-            break;
-
-          case 'unindex':
-            result = await this.unindexTool.execute(args as any);
-            break;
-
-          case 'find_similar_in_index':
-            result = await this.findSimilarInIndexTool.execute(args as any);
-            break;
-
-          case 'ask_index':
-            result = await this.askIndexTool.execute(args as any);
-            break;
-
-          default:
-            throw new Error(`Unknown tool: ${name}`);
+        const tool = this.toolMap.get(name);
+        if (!tool) {
+          throw new Error(`Unknown tool: ${name}`);
         }
+
+        const result = await tool.execute(args as any);
 
         // Check if the tool returned an error response
         if (result.error) {
@@ -157,28 +126,48 @@ class WeaviateMCPServer {
 
   async start(): Promise<void> {
     try {
-      logger.info('Starting Weaviate MCP Server...');
+      // Write startup info to a log file for debugging
+      const fs = await import('fs');
+      const logPath = '/tmp/index-mcp-server.log';
+      const log = (msg: string) => {
+        const timestamp = new Date().toISOString();
+        fs.appendFileSync(logPath, `[${timestamp}] ${msg}\n`);
+      };
 
-      // Connect to Weaviate
-      await this.weaviateClient.connect();
-      
-      // Ensure schema exists
-      await this.weaviateClient.ensureSchema();
+      log('Starting Index MCP Server...');
+      log(`Config path: ${process.env.INDEX_CONFIG_PATH || './config.yaml'}`);
+      log(`Weaviate URL: ${process.env.WEAVIATE_URL || 'from config'}`);
 
-      // Start MCP server with stdio transport
+      // Start MCP server with stdio transport first
       const transport = new StdioServerTransport();
       await this.server.connect(transport);
+      log('MCP transport connected');
 
-      // Don't log to stdout/stderr when using stdio transport - it interferes with MCP JSON
-      // logger.info('Weaviate MCP Server started successfully');
-      // logger.info('Server capabilities:', {
-      //   tools: ['search_content', 'add_document'],
-      //   weaviateConnected: this.weaviateClient.isClientConnected()
-      // });
+      // Try to connect to Weaviate (non-blocking)
+      try {
+        log('Attempting to connect to Weaviate...');
+        await this.weaviateClient.connect();
+        log('Connected to Weaviate successfully');
+        
+        // Ensure schema exists
+        log('Ensuring schema exists...');
+        await this.weaviateClient.ensureSchema();
+        log('Schema ready');
+      } catch (weaviateError) {
+        // Log error but don't fail - server can still start
+        log(`Weaviate connection failed: ${weaviateError instanceof Error ? weaviateError.message : 'Unknown error'}`);
+        log('Server will continue running, but tools will fail until Weaviate is available');
+        // Tools will handle the connection error gracefully
+      }
+
+      log('Index MCP Server started successfully');
 
     } catch (error) {
-      // Don't log to stderr when using stdio transport
-      // logger.error('Failed to start server:', error);
+      // Write error to log file
+      const fs = await import('fs');
+      const logPath = '/tmp/index-mcp-server.log';
+      const errorMsg = `FATAL ERROR: ${error instanceof Error ? error.message : 'Unknown error'}\n${error instanceof Error ? error.stack : ''}`;
+      fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${errorMsg}\n`);
       process.exit(1);
     }
   }

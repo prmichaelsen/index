@@ -1,13 +1,23 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { WeaviateClientWrapper } from '../weaviate/client.js';
+import { SharedDefinitions } from '../types/config.js';
+import { SchemaBuilder } from '../utils/schema-builder.js';
 import { logger } from '../utils/logger.js';
 import { serializeError } from '../utils/error-serializer.js';
-import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
 export class AskIndexTool {
-  constructor(private weaviateClient: WeaviateClientWrapper) {}
+  private schemaBuilder: SchemaBuilder;
+
+  constructor(
+    private weaviateClient: WeaviateClientWrapper,
+    sharedDefinitions?: SharedDefinitions
+  ) {
+    this.schemaBuilder = new SchemaBuilder(sharedDefinitions);
+  }
 
   getToolDefinition(): Tool {
+    const filtersSchema = this.schemaBuilder.buildFiltersSchema();
+    
     return {
       name: 'ask_index',
       description: `Retrieval-Augmented Generation - search your content then generate direct answers using an LLM.
@@ -18,12 +28,7 @@ Differs from search tools by returning AI-generated answers with source citation
 Args:
     question: Natural language question to answer using your indexed content
     maxSources: Maximum number of source documents to retrieve for context (1-10, default: 5)
-    filters: Optional search filters to limit source documents (same as search_content)
-        contentType: Array of content types to search within. ${CONTENT_TYPES_DESCRIPTION}
-        fileExtension: Array of file extensions to filter by
-        project: Project name to filter by
-        tags: Array of tags to filter by
-        language: Programming language filter
+    filters: Optional search filters to limit source documents
     answerLength: Preferred answer length ('short', 'medium', 'detailed', default: 'medium')
     includeSources: Whether to include full source document citations (default: true)
 
@@ -52,38 +57,7 @@ Raises:
             default: 5,
             description: 'Maximum source documents to retrieve'
           },
-          filters: {
-            type: 'object',
-            properties: {
-              contentType: {
-                type: 'array',
-                items: {
-                  type: 'string',
-                  enum: CONTENT_TYPES
-                },
-                description: 'Filter by content types'
-              },
-              fileExtension: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Filter by file extensions'
-              },
-              project: {
-                type: 'string',
-                description: 'Filter by project name'
-              },
-              tags: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Filter by tags'
-              },
-              language: {
-                type: 'string',
-                description: 'Filter by programming language'
-              }
-            },
-            description: 'Search filters for source documents'
-          },
+          filters: filtersSchema,
           answerLength: {
             type: 'string',
             enum: ['short', 'medium', 'detailed'],

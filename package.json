@@ -24,7 +24,9 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
+    "@types/js-yaml": "^4.0.9",
     "dotenv": "^16.3.1",
+    "js-yaml": "^4.1.0",
     "weaviate-client": "^3.0.8"
   },
   "devDependencies": {

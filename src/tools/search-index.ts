@@ -1,13 +1,23 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { WeaviateClientWrapper } from '../weaviate/client.js';
+import { SharedDefinitions } from '../types/config.js';
+import { SchemaBuilder } from '../utils/schema-builder.js';
 import { logger } from '../utils/logger.js';
 import { serializeError } from '../utils/error-serializer.js';
-import { CONTENT_TYPES, CONTENT_TYPES_DESCRIPTION } from '../types/content-types.js';
 
 export class SearchIndexTool {
-  constructor(private weaviateClient: WeaviateClientWrapper) {}
+  private schemaBuilder: SchemaBuilder;
+
+  constructor(
+    private weaviateClient: WeaviateClientWrapper,
+    sharedDefinitions?: SharedDefinitions
+  ) {
+    this.schemaBuilder = new SchemaBuilder(sharedDefinitions);
+  }
 
   getToolDefinition(): Tool {
+    const filtersSchema = this.schemaBuilder.buildFiltersSchema();
+    
     return {
       name: 'search_index',
       description: `Universal search combining semantic (vector) and keyword (BM25) matching for optimal results.
@@ -25,15 +35,7 @@ This makes hybrid search engines an ideal choice for applications in e-commerce,
 Args:
     query: Search query string for both semantic and keyword matching
     alpha: Balance between vector and keyword search (0.0 = pure keyword, 1.0 = pure semantic, 0.7 = balanced, default: 0.7)
-    filters: Optional search filters object (same as search_content)
-        contentType: Array of content types to search. ${CONTENT_TYPES_DESCRIPTION}
-        fileExtension: Array of file extensions to filter by
-        dateRange: Date range filter with 'after' and 'before' ISO date strings
-        project: Project name to filter by
-        tags: Array of tags to filter by
-        priority: Priority level filter ('low', 'medium', 'high')
-        status: Status filter string
-        language: Programming language filter
+    filters: Optional search filters object
     limit: Maximum number of results to return (1-100, default: 10)
     offset: Pagination offset (default: 0)
 
@@ -62,55 +64,7 @@ Raises:
             default: 0.7,
             description: 'Balance between vector (1.0) and keyword (0.0) search'
           },
-          filters: {
-            type: 'object',
-            properties: {
-              contentType: {
-                type: 'array',
-                items: {
-                  type: 'string',
-                  enum: CONTENT_TYPES
-                },
-                description: 'Filter by content types'
-              },
-              fileExtension: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Filter by file extensions'
-              },
-              dateRange: {
-                type: 'object',
-                properties: {
-                  after: { type: 'string', description: 'ISO date string' },
-                  before: { type: 'string', description: 'ISO date string' }
-                },
-                description: 'Filter by date range'
-              },
-              project: {
-                type: 'string',
-                description: 'Filter by project name'
-              },
-              tags: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Filter by tags'
-              },
-              priority: {
-                type: 'string',
-                enum: ['low', 'medium', 'high'],
-                description: 'Filter by priority level'
-              },
-              status: {
-                type: 'string',
-                description: 'Filter by status'
-              },
-              language: {
-                type: 'string',
-                description: 'Filter by programming language'
-              }
-            },
-            description: 'Search filters'
-          },
+          filters: filtersSchema,
           limit: {
             type: 'number',
             minimum: 1,
