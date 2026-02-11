@@ -1,8 +1,8 @@
 // Content type definitions
-export type ContentType = 'code' | 'note' | 'screenplay' | 'todo' | 'documentation' | 'conversation' | 'image' | 'contact' | 'video' | 'event' | 'audio' | 'transcript' | 'system';
+export type ContentType = 'code' | 'note' | 'screenplay' | 'todo' | 'documentation' | 'conversation' | 'image' | 'contact' | 'video' | 'event' | 'audio' | 'transcript' | 'system' | 'inventory';
 
 // Content type constants for reuse across tools
-export const CONTENT_TYPES = ['code', 'note', 'screenplay', 'todo', 'documentation', 'conversation', 'image', 'contact', 'video', 'event', 'audio', 'transcript', 'system'] as const;
+export const CONTENT_TYPES = ['code', 'note', 'screenplay', 'todo', 'documentation', 'conversation', 'image', 'contact', 'video', 'event', 'audio', 'transcript', 'system', 'inventory'] as const;
 
 export const CONTENT_TYPES_DESCRIPTION = `Type of content:
   - 'code': Source code files
@@ -17,6 +17,7 @@ export const CONTENT_TYPES_DESCRIPTION = `Type of content:
   - 'event': Calendar events and activities
   - 'audio': Audio files and recordings
   - 'transcript': Transcriptions of audio or video content
+  - 'inventory': Physical items and their storage locations
   - 'system': Agent instructions (reserved for internal use only)`;
 
 // Search filters interface
