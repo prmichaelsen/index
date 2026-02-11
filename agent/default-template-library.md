@@ -2,150 +2,157 @@
 
 **Concept**: Curated default templates for remember-mcp  
 **Created**: 2026-02-11  
+**Updated**: 2026-02-11 (Merged person templates)  
 **Status**: Design Specification (FINAL)
 
 ---
 
-## Complete Template Library (17 Templates)
+## Complete Template Library (15 Templates)
 
-### Contacts & Relationships (3 templates)
+### Contacts (1 template)
 
-#### 1. Person Profile (Personal)
+#### 1. Person
 ```yaml
-template_name: "Person Profile"
-description: "Track personal relationships - friends, family, acquaintances"
-category: "contacts_personal"
+template_name: "Person"
+description: "Track information about people you know - personal, professional, or both"
+category: "contacts"
 fields:
   - name: "name"
     type: "string"
     required: true
+    description: "Person's full name"
+    
   - name: "relationship"
-    type: "string"
+    type: "array"
     required: false
-    options: ["friend", "family", "acquaintance", "neighbor", "community"]
+    item_type: "string"
+    options: ["friend", "family", "colleague", "client", "mentor", "acquaintance", "neighbor", "professional", "business_partner"]
+    description: "Your relationship(s) - can have multiple (e.g., friend AND colleague)"
+    
   - name: "how_we_met"
     type: "text"
     required: false
-    description: "Story of how you met - include fun anecdotes!"
+    description: "Story of how, where, and why you met - include fun anecdotes!"
+    placeholder: "Met at Tech Conference 2026. Great conversation about AI..."
+    
   - name: "met_at"
     type: "string"
     required: false
+    description: "Location or event where you met"
+    
   - name: "met_date"
     type: "datetime"
     required: false
-  - name: "birthday"
-    type: "datetime"
-    required: false
-  - name: "interests"
-    type: "array"
-    required: false
-  - name: "contact_info"
-    type: "object"
-    required: false
-    fields:
-      - phone: string
-      - email: string
-      - address: string
-      - social_media: string
-  - name: "notes"
-    type: "text"
-    required: false
-  - name: "last_interaction"
-    type: "datetime"
-    required: false
-trigger_keywords: ["met", "friend", "family", "know", "introduced"]
-trigger_context:
-  relationship_type: "personal"
-```
-
-#### 2. Professional Contact
-```yaml
-template_name: "Professional Contact"
-description: "Track business and professional relationships"
-category: "contacts_professional"
-fields:
-  - name: "name"
-    type: "string"
-    required: true
+    description: "When you first met"
+    
+  # Professional fields (optional)
   - name: "company"
     type: "string"
     required: false
+    description: "Company or organization they work for"
+    
   - name: "job_title"
     type: "string"
     required: false
-  - name: "industry"
-    type: "string"
+    description: "Their job title or role"
+    
+  - name: "expertise"
+    type: "array"
     required: false
-  - name: "how_we_met"
-    type: "text"
-    required: false
-    description: "Professional context of how you met"
-  - name: "met_at"
-    type: "string"
-    required: false
-    description: "Conference, meeting, introduction, etc."
-  - name: "met_date"
+    description: "Their areas of expertise (for professional relationships)"
+    
+  # Personal fields (optional)
+  - name: "birthday"
     type: "datetime"
     required: false
+    description: "Birthday (for personal relationships)"
+    
+  - name: "interests"
+    type: "array"
+    required: false
+    description: "Their interests and hobbies"
+    
+  # Contact information
   - name: "contact_info"
     type: "object"
     required: false
     fields:
-      - email: string
       - phone: string
+      - email: string
       - linkedin: string
       - twitter: string
+      - address: string
       - website: string
-  - name: "expertise"
-    type: "array"
-    required: false
-    description: "Their areas of expertise"
-  - name: "can_help_with"
-    type: "array"
-    required: false
-    description: "What they can help you with"
-  - name: "notes"
-    type: "text"
-    required: false
+      
+  # Interaction tracking
   - name: "last_interaction"
     type: "datetime"
     required: false
+    description: "When you last spoke or met"
+    
   - name: "follow_up"
     type: "datetime"
     required: false
-    description: "When to follow up"
-trigger_keywords: ["colleague", "professional", "business", "work", "conference", "networking"]
-trigger_context:
-  relationship_type: "professional"
-  location_type: "office" | "conference"
-```
-
-#### 3. Contact (Simple)
-```yaml
-template_name: "Contact"
-description: "Simple contact information - use when you just need basics"
-category: "contacts_simple"
-fields:
-  - name: "name"
-    type: "string"
-    required: true
-  - name: "phone"
-    type: "string"
-    required: false
-  - name: "email"
-    type: "string"
-    required: false
+    description: "When to follow up (for professional relationships)"
+    
   - name: "notes"
     type: "text"
     required: false
-trigger_keywords: ["contact", "phone", "email", "reach"]
+    description: "Additional notes and observations"
+    
+trigger_keywords: ["met", "person", "know", "introduced", "friend", "colleague", "contact"]
+```
+
+**Why One Template**:
+- ✅ Relationships often overlap (colleague becomes friend)
+- ✅ Simpler for users (no confusion about which to use)
+- ✅ Flexible (fill only relevant fields)
+- ✅ All fields optional except name
+- ✅ Works for any relationship type
+
+**Example - Personal**:
+```yaml
+name: "Alex Johnson"
+relationship: "friend"
+how_we_met: "Met at hiking meetup. We're hiking buddies now!"
+birthday: "1990-05-15"
+interests: ["hiking", "rock climbing", "photography"]
+contact_info:
+  phone: "555-0123"
+  email: "alex@example.com"
+```
+
+**Example - Professional**:
+```yaml
+name: "Sarah Chen"
+relationship: "professional"
+company: "Google"
+job_title: "Senior Product Manager"
+how_we_met: "Met at TechCrunch Disrupt 2026. Great talk on AI products."
+expertise: ["product management", "AI", "user research"]
+contact_info:
+  email: "sarah.chen@google.com"
+  linkedin: "linkedin.com/in/sarahchen"
+follow_up: "2026-03-15"
+```
+
+**Example - Both**:
+```yaml
+name: "Jamie Lee"
+relationship: "colleague"  # Started as colleague, became friend
+company: "Acme Corp"
+job_title: "Software Engineer"
+birthday: "1988-03-20"  # Personal
+expertise: ["React", "Node.js"]  # Professional
+interests: ["coding", "gaming", "hiking"]  # Personal
+# Has both personal AND professional fields!
 ```
 
 ---
 
 ### Work & Productivity (3 templates)
 
-#### 4. Meeting Notes
+#### 2. Meeting Notes
 ```yaml
 template_name: "Meeting Notes"
 description: "Capture meeting information and action items"
@@ -162,7 +169,7 @@ fields:
 trigger_keywords: ["meeting", "discussed", "team", "sync", "standup"]
 ```
 
-#### 5. Project Tracker
+#### 3. Project Tracker
 ```yaml
 template_name: "Project Tracker"
 description: "Track project information and progress"
@@ -180,7 +187,7 @@ fields:
 trigger_keywords: ["project", "working on", "building", "developing"]
 ```
 
-#### 6. Task/Action Item
+#### 4. Task/Action Item
 ```yaml
 template_name: "Task"
 description: "Individual task or action item"
@@ -201,7 +208,7 @@ trigger_keywords: ["task", "todo", "need to", "action item"]
 
 ### Personal & Lifestyle (4 templates)
 
-#### 7. Journal Entry
+#### 5. Journal Entry
 ```yaml
 template_name: "Journal Entry"
 description: "Daily journal and reflections"
@@ -217,7 +224,7 @@ fields:
 trigger_keywords: ["today", "feeling", "journal", "reflection"]
 ```
 
-#### 8. Goal Tracker
+#### 6. Goal Tracker
 ```yaml
 template_name: "Goal"
 description: "Personal or professional goals"
@@ -233,7 +240,7 @@ fields:
 trigger_keywords: ["goal", "want to", "achieve", "target"]
 ```
 
-#### 9. Habit Tracker
+#### 7. Habit Tracker
 ```yaml
 template_name: "Habit"
 description: "Track daily habits and routines"
@@ -249,7 +256,7 @@ fields:
 trigger_keywords: ["habit", "routine", "daily", "every day"]
 ```
 
-#### 10. Inventory Item
+#### 8. Inventory Item
 ```yaml
 template_name: "Inventory Item"
 description: "Track items and their storage locations"
@@ -270,7 +277,7 @@ trigger_keywords: ["stored", "put", "kept", "where is", "inventory"]
 
 ### Entertainment & Reviews (3 templates)
 
-#### 11. Restaurant Review
+#### 9. Restaurant Review
 ```yaml
 template_name: "Restaurant Review"
 description: "Track dining experiences"
@@ -286,7 +293,7 @@ fields:
 trigger_keywords: ["restaurant", "ate at", "dinner", "lunch", "food"]
 ```
 
-#### 12. Book Review
+#### 10. Book Review
 ```yaml
 template_name: "Book Review"
 description: "Track books you've read"
@@ -303,7 +310,7 @@ fields:
 trigger_keywords: ["book", "reading", "finished reading", "author"]
 ```
 
-#### 13. Movie/Show Review
+#### 11. Movie/Show Review
 ```yaml
 template_name: "Movie Review"
 description: "Track movies and shows you've watched"
@@ -323,7 +330,7 @@ trigger_keywords: ["movie", "watched", "show", "film", "series"]
 
 ### Creative & Learning (4 templates)
 
-#### 14. Recipe
+#### 12. Recipe
 ```yaml
 template_name: "Recipe"
 description: "Cooking recipes and instructions"
@@ -341,7 +348,7 @@ fields:
 trigger_keywords: ["recipe", "cooking", "ingredients", "make"]
 ```
 
-#### 15. Idea Capture
+#### 13. Idea Capture
 ```yaml
 template_name: "Idea"
 description: "Quick ideas and brainstorms"
@@ -356,7 +363,7 @@ fields:
 trigger_keywords: ["idea", "thought", "what if", "brainstorm"]
 ```
 
-#### 16. Learning Note
+#### 14. Learning Note
 ```yaml
 template_name: "Learning Note"
 description: "Capture things you've learned"
@@ -372,7 +379,7 @@ fields:
 trigger_keywords: ["learned", "discovered", "found out", "TIL"]
 ```
 
-#### 17. Travel Destination
+#### 15. Travel Destination
 ```yaml
 template_name: "Travel Destination"
 description: "Places you've visited or want to visit"
@@ -392,12 +399,11 @@ trigger_keywords: ["travel", "visited", "trip", "destination", "vacation"]
 
 ---
 
-## Template Categories (Updated)
+## Template Categories
 
 ```typescript
 const TEMPLATE_CATEGORIES = {
-  contacts_personal: ['person_profile', 'contact'],
-  contacts_professional: ['professional_contact'],
+  contacts: ['person'],  // Single unified person template
   work: ['meeting_notes', 'project_tracker', 'task'],
   personal: ['journal_entry', 'goal_tracker', 'habit_tracker'],
   organization: ['inventory_item'],
@@ -410,69 +416,6 @@ const TEMPLATE_CATEGORIES = {
 
 ---
 
-## Comparison: Personal vs Professional Contacts
-
-### Person Profile (Personal)
-**Use For**:
-- Friends and family
-- Social connections
-- Community members
-- Neighbors
-
-**Key Fields**:
-- `relationship`: friend, family, neighbor
-- `birthday`: Important for personal relationships
-- `interests`: Hobbies and personal interests
-- `how_we_met`: Personal story and anecdotes
-
-**Example**:
-```yaml
-name: "Alex Johnson"
-relationship: "friend"
-how_we_met: "Met at a hiking meetup in 2024. We both love trail running and have been hiking buddies ever since. He introduced me to rock climbing."
-birthday: "1990-05-15"
-interests: ["hiking", "rock climbing", "photography"]
-```
-
-### Professional Contact
-**Use For**:
-- Business contacts
-- Colleagues
-- Clients
-- Professional network
-
-**Key Fields**:
-- `company`: Where they work
-- `job_title`: Their role
-- `expertise`: What they're good at
-- `can_help_with`: How they can help you
-- `follow_up`: When to reconnect
-
-**Example**:
-```yaml
-name: "Sarah Chen"
-company: "Google"
-job_title: "Senior Product Manager"
-how_we_met: "Met at TechCrunch Disrupt 2026. She gave a talk on AI product development. We discussed challenges of building AI products."
-expertise: ["product management", "AI products", "user research"]
-can_help_with: ["product strategy", "AI ethics", "team building"]
-follow_up: "2026-03-15"
-```
-
-### Contact (Simple)
-**Use For**:
-- Quick contact info
-- Service providers
-- Casual acquaintances
-- When you just need phone/email
-
-**Key Fields**:
-- Just name, phone, email, notes
-- Minimal fields
-- Quick capture
-
----
-
 **Status**: Design Specification (FINAL)  
-**Total Templates**: 17 (3 contact types, 3 work, 4 personal, 3 entertainment, 4 creative/learning)  
-**Key Update**: Separate personal and professional contact templates
+**Total Templates**: 15 (1 person, 3 work, 4 personal, 3 entertainment, 4 creative/learning)  
+**Key Design**: Single flexible Person template for all relationship types
