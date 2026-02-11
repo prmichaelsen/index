@@ -233,12 +233,14 @@ fields:
   - goal_name (required)
   - category (enum: health, career, financial, personal, learning)
   - target_date (datetime)
-  - current_progress (number, 0-100)
+  - current_progress (float, 0-1)  # ✅ 0-1 for consistency with weight/trust
   - milestones (array)
   - obstacles (array)
   - notes (text)
 trigger_keywords: ["goal", "want to", "achieve", "target"]
 ```
+
+**Note**: Progress uses 0-1 float (not 0-100 int) for consistency with weight, trust, confidence, and other scoring fields throughout the system.
 
 #### 7. Habit Tracker
 ```yaml
