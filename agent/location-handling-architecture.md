@@ -83,6 +83,17 @@ RequestContext {
     is_approximate: boolean; // True if using IP-based location
   };
   
+  // Locale (provided by platform via cookie)
+  locale: {
+    language: string;       // e.g., "en", "es", "fr", "ja"
+    country: string;        // e.g., "US", "GB", "FR", "JP"
+    full_locale: string;    // e.g., "en-US", "es-MX", "fr-FR"
+    timezone: string;       // e.g., "America/Los_Angeles"
+    currency: string;       // e.g., "USD", "EUR", "JPY"
+    date_format: string;    // e.g., "MM/DD/YYYY", "DD/MM/YYYY"
+    time_format: string;    // e.g., "12h", "24h"
+  };
+  
   // Other context
   timestamp: datetime;
   device_info: object;
