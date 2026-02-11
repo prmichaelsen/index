@@ -136,18 +136,28 @@ Weaviate Collections:
 
 ### Rationale
 
-**Separate Collections For**:
+**Memory_{user_id} - Unified Collection**:
+- Stores BOTH memories and relationships
+- Essential for RAG: LLM needs both together
+- Unified semantic search across memories and relationship observations
+- Single query gets memory with its connections
+- doc_type field discriminates between memory and relationship
 
-1. **Memories** - Core user content, frequently searched
-2. **Relationships** - Different schema, graph structure
-3. **Templates** - Shared resource (system) + user-specific
-4. **Audit** - Different retention, less frequently accessed
+**Template_system - Shared Collection**:
+- Default templates available to all users
+- Immutable, curated by platform
+- Separate because it's a shared resource
 
-**Why Not Single Collection**:
-- Memories and audit logs have very different access patterns
-- Templates need to be shared across users (Template_system)
-- Relationships have fundamentally different schema
-- Performance: Smaller collections = faster queries
+**Template_{user_id} - Per-User Collection** (lazy):
+- User's custom templates
+- Private to user
+- Created only when user makes first custom template
+
+**Audit_{user_id} - Per-User Collection** (optional, lazy):
+- Audit logs, action logs, history
+- Different retention policies
+- Less frequently searched
+- Created only if user enables audit logging
 
 ---
 
