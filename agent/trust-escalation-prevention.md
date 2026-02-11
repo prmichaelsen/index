@@ -187,18 +187,12 @@ async function resetMemoryBlock(
     timestamp: new Date()
   });
   
-  // Optionally restore some trust
-  const permission = await getPermission(owner_user_id, accessor_user_id);
-  if (permission.trust_level < 0.3) {
-    await updateTrustLevel(
-      owner_user_id,
-      accessor_user_id,
-      0.3,
-      `Trust restored after block reset: ${reason}`
-    );
-  }
+  // Note: Trust restoration is a separate action
+  // Owner must explicitly restore trust if desired
 }
 ```
+
+**Note**: Resetting the block only unblocks access to that specific memory. Trust level remains at the reduced level. Owner must separately restore trust if they want to increase it.
 
 ### View Access Attempts
 
