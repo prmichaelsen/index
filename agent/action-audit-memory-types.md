@@ -144,7 +144,7 @@ AuditMemory:
   
   # Metadata
   weight: 1.0  # Audit logs always high weight
-  trust: 0.0  # Only user can see their own audit logs (cross-user blocked)
+  trust: 0.0  # ✅ Only owner can see their own audit logs (cross-user blocked)
   immutable: true  # Cannot be modified
 ```
 
@@ -265,7 +265,7 @@ HistoryMemory:
   
   # Metadata
   weight: 0.3  # History typically lower weight
-  trust: 0.0  # Only user sees their own history (cross-user blocked)
+  trust: 0.0  # ✅ Only owner sees their own history (cross-user blocked)
   tags: array
 ```
 
