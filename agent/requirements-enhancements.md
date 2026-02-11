@@ -426,6 +426,8 @@ All design specifications:
 6. [`location-handling-architecture.md`](location-handling-architecture.md) - Location architecture
 7. [`trust-system-implementation.md`](trust-system-implementation.md) - Trust enforcement
 8. [`permissions-storage-architecture.md`](permissions-storage-architecture.md) - Permission storage
+9. [`trust-escalation-prevention.md`](trust-escalation-prevention.md) - Trust escalation prevention
+10. [`access-control-result-pattern.md`](access-control-result-pattern.md) - Type-safe error handling
 
 ---
 
