@@ -98,41 +98,37 @@ Weaviate Collections:
 
 ---
 
-## Recommendation: Hybrid with Clear Separation
+## Final Decision: Hybrid Approach
 
-### Proposed Collection Structure
+### Final Collection Structure (IMPLEMENTED)
 
 ```
 Weaviate Collections:
 
 1. Memory_{user_id}
-   - User memories (main content)
-   - Searchable, frequently accessed
-   - Optimized for semantic search
-   - Includes: content, context, location, weight, trust
+   - Stores BOTH memories AND relationships ✅
+   - doc_type: "memory" or "relationship"
+   - Unified semantic search
+   - Essential for RAG context
+   - Single query gets memories with relationships
    
-2. Relationship_{user_id}
-   - Memory relationships
-   - Separate because different schema
-   - Optimized for graph queries
-   - Includes: memory_ids, type, observation, strength
-   
-3. Template_system
+2. Template_system
    - Default templates (shared across all users)
    - Immutable, curated by platform
-   - Optimized for template matching
+   - Separate because shared resource
    
-4. Template_{user_id}
+3. Template_{user_id} (lazy create)
    - User-created templates
-   - Private or shared
-   - Optimized for template matching
+   - Private to user
+   - Created only when user makes custom template
    
-5. Audit_{user_id} (OPTIONAL)
+4. Audit_{user_id} (optional, lazy create)
    - Audit logs, action logs, history
    - Separate retention policies
-   - Less frequently searched
-   - Can be disabled or sampled
+   - Created only if user enables audit logging
 ```
+
+**Key Change**: Relationships are NOT in a separate collection - they're stored in Memory_{user_id} with doc_type discriminator.
 
 ### Rationale
 
